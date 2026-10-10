@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import {validateProject,serializeProject,safeJSON,escapeHTML,parseImported,LIMITS} from '../src/model.js';
 import {exportHTML,playerCSS} from '../src/player.js';
 const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jC3sAAAAASUVORK5CYII=';
@@ -12,3 +14,13 @@ test('rejects malformed hotspots and strips extra fields',()=>{for(const hotspot
 test('null hotspots and empty projects work',()=>{const p=fixture();p.steps[0].hotspot=null;assert.equal(validateProject(p).steps[0].hotspot,null);assert.deepEqual(validateProject({version:1,title:'',steps:[]}).steps,[]);assert.ok(playerCSS.includes('.tf-target[hidden]{display:none}'))});
 test('escaping protects text and script boundaries',()=>{assert.equal(escapeHTML('<>&"\''),'&lt;&gt;&amp;&quot;&#39;');assert.ok(!safeJSON('</script>&\u2028\u2029').includes('<'));assert.equal(JSON.parse(safeJSON('hello < > & \u2028')), 'hello < > & \u2028')});
 test('limits are internally consistent',()=>{assert.equal(LIMITS.steps,20);assert.equal(LIMITS.imageBytes,8388608);assert.ok(LIMITS.projectBytes>LIMITS.totalBytes*4/3)});
+
+test('preview focus does not scroll the Close button out of view',()=>{
+ const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+ const handler=source.match(/\$\('preview'\)\.onclick=\(\)=>\{([\s\S]*?)\};\$\('closePreview'\)/)[1];
+ const calls=[];const player={focus:options=>{calls.push(['focus',options]);assert.equal(options.preventScroll,true)}};
+ const dialog={scrollTop:420,showModal:()=>calls.push(['show'])};
+ const root={querySelector:()=>player};
+ runInNewContext(handler,{$:id=>id==='previewDialog'?dialog:root,cleanupPreview:()=>{},mountPlayer:()=>()=>{},project:{}});
+ assert.equal(dialog.scrollTop,0);assert.equal(calls[0][0],'show');assert.equal(calls[1][0],'focus');
+});

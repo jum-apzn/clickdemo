@@ -2,6 +2,23 @@
 
 Automated model tests are intentionally separate from browser verification. Run this checklist in a current Chromium, Firefox or Safari browser; do not mark unrun checks as passed.
 
+## Recorded verification: 2026-10-10
+
+An independent reviewer exercised the real Chromium staging editor at a desktop viewport. These checks passed:
+
+- Export HTML → reopen that HTML in the editor → replace its screenshot with a 600 × 1200 PNG → export again.
+- Replacement retained the annotations and normalized hotspot position/size (44%, 57%, 52 px).
+- Removing a hotspot removed its target from preview.
+- Reordering restored keyboard focus to the selected screen.
+- Title/caption edits, literal script text in preview, hotspot keyboard movement and resizing, click-to-advance, End and Escape.
+- Malicious appended script/iframe HTML remained inert during import; no alert or page-title change occurred.
+- Malformed raster import retained the current project; multiple PNG import and cancelled deletion worked.
+- Portrait aspect ratio remained correct: editor 571 × 1142; preview approximately 246 × 492.
+
+A preview-opening focus issue scrolled the Close control out of view. The fix prevents focus-induced scrolling and resets the dialog to its top; its source-level regression test is automated. A browser retest of that fix is pending.
+
+Not yet verified: actual standalone file:// playback with network disabled, offline network-request inspection, mobile/tablet layout, cross-browser behavior, or every checklist item below. Browser resizing/network tracing were unavailable in the review environment; blocked DevTools were not bypassed. Successful export and reimport do not prove all of those behaviors.
+
 ## Authoring
 
 - Example opens with three original Fern screens; no runtime error appears.
